@@ -71,11 +71,12 @@ bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
          std::unordered_set<int>& visited, PathQueryHandler* queryUtil,
          const std::vector<int>& pred_set, bool directed,
          std::unordered_map<int, int>& parent) {
+
     if (visited.count(node)) {
         if (node == start && parent.find(node) != parent.end()) {
             int pred = parent[node];
-            path.push_back(
-                {start, pred});  // Add the starting edge to complete the cycle
+            // Add the starting edge to complete the cycle
+            path.push_back({start, pred});  
             return true;         // Cycle found
         }
         return false;  // Visited but not the start node
@@ -109,9 +110,9 @@ bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
 std::string pathToString(const std::vector<std::pair<int, int>>& path) {
     std::stringstream ss;
     for (size_t i = 0; i < path.size(); ++i) {
-        if (i > 0) ss << ",";
-        ss << path[i].first << "," << path[i].second;
-        if (i + 1 < path.size()) ss << "," << path[i + 1].first;
+        // if (i > 0) ss << ",";
+        ss << path[i].first << "," << path[i].second << "   @   ";
+        // if (i + 1 < path.size()) ss << "," << path[i + 1].first;
     }
     return ss.str();
 }
