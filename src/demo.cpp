@@ -67,70 +67,69 @@ extern "C" string sssp(std::vector<int> iri_set, bool directed,
     return queryUtil->getJSONArray(dist);
 }
 
-bool dfs(int node, int parent, int start, std::vector<int>& path,
-         std::unordered_set<int>& visited,
-         const std::unordered_set<int>& iri_set, PathQueryHandler* queryUtil,
-         const std::vector<int>& pred_set, bool directed) {
+bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
+         std::unordered_set<int>& visited, PathQueryHandler* queryUtil,
+         const std::vector<int>& pred_set, bool directed,
+         std::unordered_map<int, int>& parent) {
     if (visited.count(node)) {
-        if (node == start &&
-            parent != start) {  // Check if we've found a cycle that's not just
-                                // a loop back to start
-            path.push_back(start);  // Add start node to path
-            return true;            // Cycle found
+        if (node == start && parent.find(node) != parent.end()) {
+            int pred = parent[node];
+            path.push_back(
+                {start, pred});  // Add the starting edge to complete the cycle
+            return true;         // Cycle found
         }
-        return false;  // Visited but not the start node or just a loop back to
-                       // start
+        return false;  // Visited but not the start node
     }
 
     visited.insert(node);
-    path.push_back(node);
 
     for (int pred : pred_set) {
         int outSize = queryUtil->getOutSize(node, pred);
         for (int pos = 0; pos < outSize; ++pos) {
             int neighbor = queryUtil->getOutVertID(node, pred, pos);
-            if (neighbor != parent ||
-                directed) {  // Avoid going back to parent in undirected graph
-                if (dfs(neighbor, node, start, path, visited, iri_set,
-                        queryUtil, pred_set, directed)) {
+            if (neighbor != node &&
+                (directed || parent.find(node) == parent.end() ||
+                 parent[node] != neighbor)) {
+                path.push_back({node, pred});  // Add the edge to the path
+                parent[neighbor] = node;  // Mark the parent of the neighbor
+                if (dfs(neighbor, start, path, visited, queryUtil, pred_set,
+                        directed, parent)) {
                     return true;  // Cycle found in recursion
                 }
-            }
-        }
-
-        if (!directed) {
-            // In an undirected graph, also check incoming edges
-            int inSize = queryUtil->getInSize(node, pred);
-            for (int pos = 0; pos < inSize; ++pos) {
-                int neighbor = queryUtil->getInVertID(node, pred, pos);
-                if (neighbor != parent) {  // Avoid going back to parent
-                    if (dfs(neighbor, node, start, path, visited, iri_set,
-                            queryUtil, pred_set, directed)) {
-                        return true;  // Cycle found in recursion
-                    }
-                }
+                parent.erase(
+                    neighbor);    // Remove the parent mark (backtracking)
+                path.pop_back();  // Backtrack if no cycle found
             }
         }
     }
 
-    path.pop_back();  // Backtrack
     return false;
+}
+
+std::string pathToString(const std::vector<std::pair<int, int>>& path) {
+    std::stringstream ss;
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (i > 0) ss << ",";
+        ss << path[i].first << "," << path[i].second;
+        if (i + 1 < path.size()) ss << "," << path[i + 1].first;
+    }
+    return ss.str();
 }
 
 extern "C" string cyclePath(std::vector<int> iri_set, bool directed,
                             std::vector<int> pred_set,
                             PathQueryHandler* queryUtil) {
-    std::unordered_set<int> iri_set_lookup(iri_set.begin(), iri_set.end());
-    std::vector<int> cycle_path;
-
     for (int start_node : iri_set) {
+        std::vector<std::pair<int, int>> cycle_path;
         std::unordered_set<int> visited;
-        if (dfs(start_node, -1, start_node, cycle_path, visited, iri_set_lookup,
-                queryUtil, pred_set, directed)) {
-            return queryUtil->getPathString(
-                cycle_path);  // For a comma-separated string
+        std::unordered_map<int, int> parent;
+
+        if (dfs(start_node, start_node, cycle_path, visited, queryUtil,
+                pred_set, directed, parent)) {
+            return pathToString(cycle_path);
         }
     }
+
     return "";  // No cycle found
 }
 
