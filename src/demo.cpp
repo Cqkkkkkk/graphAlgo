@@ -109,13 +109,13 @@ bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
 std::string pathToString(const std::vector<std::pair<int, int>>& path) {
     std::stringstream ss;
     for (size_t i = 0; i < path.size(); ++i) {
-        // if (i > 0) ss << ",";
+        if (i > 0) ss << ",";
         ss << path[i].first << "," << path[i].second;
         if (i + 1 < path.size()) 
             ss << "," << path[i + 1].first;
         else
             ss << "," << path[0].first;
-        ss << "    @    ";
+        // ss << "    @    ";
     }
     return ss.str();
 }
@@ -210,7 +210,7 @@ PathQueryHandler getQueryUtil() {
 int main(int argc, char* argv[]) {
     PathQueryHandler queryUtil = PathQueryHandler(nullptr);
     queryUtil.inputGraph("graph.txt");
-    queryUtil.printCSR();
+    // queryUtil.printCSR();
     std::vector<int> iri_set = {0, 1, 2, 3};
     std::vector<int> pred_set = {0, 1};
     // string rt = sssp(iri_set, true, pred_set, &queryUtil);

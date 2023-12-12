@@ -1,7 +1,7 @@
 CXX = g++
 CC = gcc
-CFLAGS = -c -Wall -O2 -std=c++11
-EXEFLAG = -O2 -std=c++11
+CFLAGS = -c -Wall -O2 -std=c++11 -g
+EXEFLAG = -g -O2 -std=c++11
 objdir = .obj/
 exedir = bin/
 objfile = $(objdir)CSR.o $(objdir)PathQueryHandler.o
