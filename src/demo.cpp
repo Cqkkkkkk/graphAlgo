@@ -70,14 +70,13 @@ extern "C" string sssp(std::vector<int> iri_set, bool directed,
 bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
          std::unordered_set<int>& visited, PathQueryHandler* queryUtil,
          const std::vector<int>& pred_set, bool directed,
-         std::unordered_map<int, int>& parent) {
+         std::unordered_map<int, std::pair<int, int>>& parent) {
 
     if (visited.count(node)) {
         if (node == start && parent.find(node) != parent.end()) {
-            int pred = parent[node];
-            // Add the starting edge to complete the cycle
-            path.push_back({start, pred});  
-            return true;         // Cycle found
+            auto parent_info = parent[node];
+            // path.push_back({node, parent_info.second});  // Add the starting edge to complete the cycle
+            return true;  // Cycle found
         }
         return false;  // Visited but not the start node
     }
@@ -90,15 +89,14 @@ bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
             int neighbor = queryUtil->getOutVertID(node, pred, pos);
             if (neighbor != node &&
                 (directed || parent.find(node) == parent.end() ||
-                 parent[node] != neighbor)) {
+                 parent[node].first != neighbor)) {
                 path.push_back({node, pred});  // Add the edge to the path
-                parent[neighbor] = node;  // Mark the parent of the neighbor
+                parent[neighbor] = {node, pred};  // Store both parent node and predicate
                 if (dfs(neighbor, start, path, visited, queryUtil, pred_set,
                         directed, parent)) {
                     return true;  // Cycle found in recursion
                 }
-                parent.erase(
-                    neighbor);    // Remove the parent mark (backtracking)
+                parent.erase(neighbor);  // Remove the parent mark (backtracking)
                 path.pop_back();  // Backtrack if no cycle found
             }
         }
@@ -107,12 +105,17 @@ bool dfs(int node, int start, std::vector<std::pair<int, int>>& path,
     return false;
 }
 
+
 std::string pathToString(const std::vector<std::pair<int, int>>& path) {
     std::stringstream ss;
     for (size_t i = 0; i < path.size(); ++i) {
         // if (i > 0) ss << ",";
-        ss << path[i].first << "," << path[i].second << "   @   ";
-        // if (i + 1 < path.size()) ss << "," << path[i + 1].first;
+        ss << path[i].first << "," << path[i].second;
+        if (i + 1 < path.size()) 
+            ss << "," << path[i + 1].first;
+        else
+            ss << "," << path[0].first;
+        ss << "    @    ";
     }
     return ss.str();
 }
@@ -123,7 +126,7 @@ extern "C" string cyclePath(std::vector<int> iri_set, bool directed,
     for (int start_node : iri_set) {
         std::vector<std::pair<int, int>> cycle_path;
         std::unordered_set<int> visited;
-        std::unordered_map<int, int> parent;
+        std::unordered_map<int, std::pair<int, int>> parent;
 
         if (dfs(start_node, start_node, cycle_path, visited, queryUtil,
                 pred_set, directed, parent)) {
@@ -209,7 +212,7 @@ int main(int argc, char* argv[]) {
     queryUtil.inputGraph("graph.txt");
     queryUtil.printCSR();
     std::vector<int> iri_set = {0, 1, 2, 3};
-    std::vector<int> pred_set = {0};
+    std::vector<int> pred_set = {0, 1};
     // string rt = sssp(iri_set, true, pred_set, &queryUtil);
     string rt = cyclePath(iri_set, true, pred_set, &queryUtil);
 
